@@ -16,6 +16,14 @@ function getDb() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS cafe_waitlist (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cafe_name TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
   return db;
 }
 
@@ -40,6 +48,38 @@ export function getWaitlistCount(): number {
     const row = db.prepare('SELECT COUNT(*) as count FROM waitlist').get() as {
       count: number;
     };
+    return row.count;
+  } finally {
+    db.close();
+  }
+}
+
+export function addCafeToWaitlist(
+  cafeName: string,
+  email: string
+): { created: boolean } {
+  const db = getDb();
+  try {
+    db.prepare(
+      'INSERT INTO cafe_waitlist (cafe_name, email) VALUES (?, ?)'
+    ).run(cafeName, email);
+    return { created: true };
+  } catch (err: any) {
+    if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      return { created: false };
+    }
+    throw err;
+  } finally {
+    db.close();
+  }
+}
+
+export function getCafeWaitlistCount(): number {
+  const db = getDb();
+  try {
+    const row = db
+      .prepare('SELECT COUNT(*) as count FROM cafe_waitlist')
+      .get() as { count: number };
     return row.count;
   } finally {
     db.close();

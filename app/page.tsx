@@ -1,4 +1,5 @@
 import WaitlistForm from '@/components/WaitlistForm';
+import CafeWaitlistForm from '@/components/CafeWaitlistForm';
 
 const features = [
   {
@@ -34,12 +35,20 @@ export default function Home() {
             Coff Coff
           </span>
         </div>
-        <a
-          href="#waitlist"
-          className="rounded-full border border-espresso/20 px-4 py-2 text-sm font-medium text-espresso transition hover:bg-espresso hover:text-cream"
-        >
-          Join waitlist
-        </a>
+        <div className="flex items-center gap-4">
+          <a
+            href="#cafe-owners"
+            className="hidden text-sm font-medium text-espresso underline-offset-4 hover:underline sm:inline"
+          >
+            For cafe owners
+          </a>
+          <a
+            href="#waitlist"
+            className="rounded-full border border-espresso/20 px-4 py-2 text-sm font-medium text-espresso transition hover:bg-espresso hover:text-cream"
+          >
+            Join waitlist
+          </a>
+        </div>
       </header>
 
       <section className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-6 pb-20 pt-12 text-center sm:pt-20">
@@ -111,6 +120,26 @@ export default function Home() {
             your city, plus first pick of founding member perks.
           </p>
           <WaitlistForm variant="dark" />
+        </div>
+      </section>
+
+      <section
+        id="cafe-owners"
+        className="bg-latte/20 py-20 scroll-mt-24"
+      >
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-6 text-center">
+          <span className="rounded-full bg-white px-4 py-1 text-sm font-medium text-roast">
+            For cafe owners
+          </span>
+          <h2 className="font-display max-w-2xl text-3xl font-bold text-espresso">
+            Own a cafe? Get listed before we launch.
+          </h2>
+          <p className="max-w-lg text-roast">
+            Claim your cafe's profile early, reach coffee lovers actively
+            looking for their next favorite spot, and get featured placement
+            when Coff Coff goes live in your city.
+          </p>
+          <CafeWaitlistForm />
         </div>
       </section>
 

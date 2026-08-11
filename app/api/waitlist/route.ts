@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
-  const { created } = addToWaitlist(normalizedEmail);
+  const { created } = await addToWaitlist(normalizedEmail);
 
   return NextResponse.json({
     ok: true,
@@ -30,5 +30,5 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  return NextResponse.json({ count: getWaitlistCount() });
+  return NextResponse.json({ count: await getWaitlistCount() });
 }

@@ -8,7 +8,9 @@ out/
 # production
 build/
 
-# database
+# database (local dev only — production uses Turso, see README)
+local.db
+local.db-*
 data/
 
 # env

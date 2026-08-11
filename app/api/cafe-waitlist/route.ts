@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
-  const { created } = addCafeToWaitlist(cafeName.trim(), normalizedEmail);
+  const { created } = await addCafeToWaitlist(cafeName.trim(), normalizedEmail);
 
   return NextResponse.json({
     ok: true,
@@ -38,5 +38,5 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  return NextResponse.json({ count: getCafeWaitlistCount() });
+  return NextResponse.json({ count: await getCafeWaitlistCount() });
 }

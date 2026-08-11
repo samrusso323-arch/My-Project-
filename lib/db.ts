@@ -1,87 +1,85 @@
-import Database from 'better-sqlite3';
-import fs from 'fs';
-import path from 'path';
+import { createClient } from '@libsql/client';
 
-const dataDir = path.join(process.cwd(), 'data');
-const dbPath = path.join(dataDir, 'waitlist.db');
+// In production, set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN (see README).
+// Locally, falls back to a SQLite file on disk so no account is needed for dev.
+const client = createClient({
+  url: process.env.TURSO_DATABASE_URL ?? 'file:local.db',
+  authToken: process.env.TURSO_AUTH_TOKEN,
+});
 
-function getDb() {
-  fs.mkdirSync(dataDir, { recursive: true });
-  const db = new Database(dbPath);
-  db.pragma('journal_mode = WAL');
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS waitlist (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT NOT NULL UNIQUE,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    )
-  `);
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS cafe_waitlist (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      cafe_name TEXT NOT NULL,
-      email TEXT NOT NULL UNIQUE,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    )
-  `);
-  return db;
+let ready: Promise<void> | null = null;
+
+function ensureSchema(): Promise<void> {
+  if (!ready) {
+    ready = (async () => {
+      await client.execute(`
+        CREATE TABLE IF NOT EXISTS waitlist (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          email TEXT NOT NULL UNIQUE,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+      `);
+      await client.execute(`
+        CREATE TABLE IF NOT EXISTS cafe_waitlist (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          cafe_name TEXT NOT NULL,
+          email TEXT NOT NULL UNIQUE,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+      `);
+    })();
+  }
+  return ready;
 }
 
-export function addToWaitlist(email: string): { created: boolean } {
-  const db = getDb();
+function isUniqueConstraintError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return message.includes('UNIQUE constraint failed');
+}
+
+export async function addToWaitlist(email: string): Promise<{ created: boolean }> {
+  await ensureSchema();
   try {
-    db.prepare('INSERT INTO waitlist (email) VALUES (?)').run(email);
+    await client.execute({
+      sql: 'INSERT INTO waitlist (email) VALUES (?)',
+      args: [email],
+    });
     return { created: true };
-  } catch (err: any) {
-    if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+  } catch (err) {
+    if (isUniqueConstraintError(err)) {
       return { created: false };
     }
     throw err;
-  } finally {
-    db.close();
   }
 }
 
-export function getWaitlistCount(): number {
-  const db = getDb();
-  try {
-    const row = db.prepare('SELECT COUNT(*) as count FROM waitlist').get() as {
-      count: number;
-    };
-    return row.count;
-  } finally {
-    db.close();
-  }
+export async function getWaitlistCount(): Promise<number> {
+  await ensureSchema();
+  const result = await client.execute('SELECT COUNT(*) as count FROM waitlist');
+  return Number(result.rows[0].count);
 }
 
-export function addCafeToWaitlist(
+export async function addCafeToWaitlist(
   cafeName: string,
   email: string
-): { created: boolean } {
-  const db = getDb();
+): Promise<{ created: boolean }> {
+  await ensureSchema();
   try {
-    db.prepare(
-      'INSERT INTO cafe_waitlist (cafe_name, email) VALUES (?, ?)'
-    ).run(cafeName, email);
+    await client.execute({
+      sql: 'INSERT INTO cafe_waitlist (cafe_name, email) VALUES (?, ?)',
+      args: [cafeName, email],
+    });
     return { created: true };
-  } catch (err: any) {
-    if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+  } catch (err) {
+    if (isUniqueConstraintError(err)) {
       return { created: false };
     }
     throw err;
-  } finally {
-    db.close();
   }
 }
 
-export function getCafeWaitlistCount(): number {
-  const db = getDb();
-  try {
-    const row = db
-      .prepare('SELECT COUNT(*) as count FROM cafe_waitlist')
-      .get() as { count: number };
-    return row.count;
-  } finally {
-    db.close();
-  }
+export async function getCafeWaitlistCount(): Promise<number> {
+  await ensureSchema();
+  const result = await client.execute('SELECT COUNT(*) as count FROM cafe_waitlist');
+  return Number(result.rows[0].count);
 }

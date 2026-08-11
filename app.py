@@ -11,6 +11,8 @@ from datetime import datetime, timezone
 from flask import Flask, g, jsonify, request, send_from_directory
 from werkzeug.utils import secure_filename
 
+import horse_render
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "speedmap.db")
 SILKS_DIR = os.path.join(BASE_DIR, "silks")
@@ -28,7 +30,6 @@ CREATE TABLE IF NOT EXISTS horses (
     pattern TEXT NOT NULL DEFAULT 'solid',
     silk1 TEXT NOT NULL DEFAULT '#0b6e4f',
     silk2 TEXT NOT NULL DEFAULT '#ffffff',
-    cap TEXT NOT NULL DEFAULT '#0b6e4f',
     namecolor TEXT NOT NULL DEFAULT '#1c1b17',
     silk_filename TEXT,
     created_at TEXT NOT NULL,
@@ -59,6 +60,7 @@ CREATE TABLE IF NOT EXISTS race_entries (
     horse_id INTEGER NOT NULL REFERENCES horses(id) ON DELETE CASCADE,
     col TEXT NOT NULL,
     position INTEGER NOT NULL DEFAULT 0,
+    number TEXT,
     UNIQUE(race_id, horse_id)
 );
 """
@@ -98,7 +100,6 @@ def row_to_horse(row):
         "pattern": row["pattern"],
         "silk1": row["silk1"],
         "silk2": row["silk2"],
-        "cap": row["cap"],
         "namecolor": row["namecolor"],
         "silk_filename": row["silk_filename"],
     }
@@ -120,6 +121,20 @@ def index():
 @app.route("/silks/<path:filename>")
 def serve_silk(filename):
     return send_from_directory(SILKS_DIR, filename)
+
+
+@app.route("/render/horse.png")
+def render_horse_png():
+    body = request.args.get("body", "#8a6a3a")
+    pattern = request.args.get("pattern", "solid")
+    silk1 = request.args.get("silk1", "#0b6e4f")
+    silk2 = request.args.get("silk2", "#ffffff")
+    silk_filename = request.args.get("silk") or None
+    path = horse_render.get_or_render_path(body, pattern, silk1, silk2, silk_filename, SILKS_DIR)
+    directory, filename = os.path.split(path)
+    response = send_from_directory(directory, filename)
+    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    return response
 
 
 # --------------------------------------------------------------- horses ---
@@ -150,7 +165,6 @@ def upsert_horse():
         "pattern": data.get("pattern", "solid"),
         "silk1": data.get("silk1", "#0b6e4f"),
         "silk2": data.get("silk2", "#ffffff"),
-        "cap": data.get("cap", "#0b6e4f"),
         "namecolor": data.get("namecolor", "#1c1b17"),
         "silk_filename": data.get("silk_filename"),
     }
@@ -161,19 +175,19 @@ def upsert_horse():
     if existing:
         db.execute(
             """UPDATE horses SET name=?, horsecolor=?, pattern=?, silk1=?, silk2=?,
-               cap=?, namecolor=?, silk_filename=?, updated_at=? WHERE id=?""",
+               namecolor=?, silk_filename=?, updated_at=? WHERE id=?""",
             (name, fields["horsecolor"], fields["pattern"], fields["silk1"],
-             fields["silk2"], fields["cap"], fields["namecolor"],
+             fields["silk2"], fields["namecolor"],
              fields["silk_filename"], ts, existing["id"]),
         )
         horse_id = existing["id"]
     else:
         cur = db.execute(
-            """INSERT INTO horses (name, horsecolor, pattern, silk1, silk2, cap,
+            """INSERT INTO horses (name, horsecolor, pattern, silk1, silk2,
                namecolor, silk_filename, created_at, updated_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?)""",
+               VALUES (?,?,?,?,?,?,?,?,?)""",
             (name, fields["horsecolor"], fields["pattern"], fields["silk1"],
-             fields["silk2"], fields["cap"], fields["namecolor"],
+             fields["silk2"], fields["namecolor"],
              fields["silk_filename"], ts, ts),
         )
         horse_id = cur.lastrowid
@@ -307,7 +321,7 @@ def get_race(race_id):
     if not race:
         return jsonify({"error": "not found"}), 404
     entries = db.execute(
-        """SELECT re.col, re.position, h.* FROM race_entries re
+        """SELECT re.col, re.position, re.number, h.* FROM race_entries re
            JOIN horses h ON h.id = re.horse_id
            WHERE re.race_id=? ORDER BY re.col, re.position""",
         (race_id,),
@@ -319,7 +333,7 @@ def get_race(race_id):
         "created_at": race["created_at"],
         "updated_at": race["updated_at"],
         "entries": [
-            {**row_to_horse(e), "col": e["col"], "position": e["position"]}
+            {**row_to_horse(e), "col": e["col"], "position": e["position"], "number": e["number"]}
             for e in entries
         ],
     })
@@ -329,8 +343,8 @@ def save_race_entries(db, race_id, entries):
     db.execute("DELETE FROM race_entries WHERE race_id=?", (race_id,))
     for e in entries:
         db.execute(
-            "INSERT INTO race_entries (race_id, horse_id, col, position) VALUES (?,?,?,?)",
-            (race_id, e["horse_id"], e["col"], e.get("position", 0)),
+            "INSERT INTO race_entries (race_id, horse_id, col, position, number) VALUES (?,?,?,?,?)",
+            (race_id, e["horse_id"], e["col"], e.get("position", 0), e.get("number")),
         )
 
 

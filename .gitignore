@@ -1,6 +1,8 @@
 speedmap.db
 silks/*
 !silks/.gitkeep
+render_cache/*
+!render_cache/.gitkeep
 __pycache__/
 *.pyc
 .venv/

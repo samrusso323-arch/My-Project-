@@ -26,119 +26,33 @@ function debounce(fn, wait){
   };
 }
 
-// ---------------------------------------------------------------- SVG ---
+// -------------------------------------------------------------- image ---
 
-function patternDefs(id, pattern, c1, c2){
-  switch(pattern){
-    case "hoops":
-      return {
-        defs:`<pattern id="${id}" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(90)">
-                <rect width="10" height="10" fill="${c1}"/>
-                <rect width="10" height="5" fill="${c2}"/>
-              </pattern>`,
-        fill:`url(#${id})`
-      };
-    case "stripes":
-      return {
-        defs:`<pattern id="${id}" width="8" height="8" patternUnits="userSpaceOnUse">
-                <rect width="8" height="8" fill="${c1}"/>
-                <rect width="4" height="8" fill="${c2}"/>
-              </pattern>`,
-        fill:`url(#${id})`
-      };
-    case "spots":
-      return {
-        defs:`<pattern id="${id}" width="9" height="9" patternUnits="userSpaceOnUse">
-                <rect width="9" height="9" fill="${c1}"/>
-                <circle cx="4.5" cy="4.5" r="2.1" fill="${c2}"/>
-              </pattern>`,
-        fill:`url(#${id})`
-      };
-    case "stars":
-      return {
-        defs:`<pattern id="${id}" width="12" height="12" patternUnits="userSpaceOnUse">
-                <rect width="12" height="12" fill="${c1}"/>
-                <path d="M6 1.5 L7.2 4.6 L10.5 4.8 L7.9 6.9 L8.8 10.1 L6 8.2 L3.2 10.1 L4.1 6.9 L1.5 4.8 L4.8 4.6 Z" fill="${c2}"/>
-              </pattern>`,
-        fill:`url(#${id})`
-      };
-    case "quarters":
-      return {
-        defs:`<pattern id="${id}" width="10" height="10" patternUnits="userSpaceOnUse">
-                <rect width="10" height="10" fill="${c1}"/>
-                <rect width="5" height="5" fill="${c2}"/>
-                <rect x="5" y="5" width="5" height="5" fill="${c2}"/>
-              </pattern>`,
-        fill:`url(#${id})`
-      };
-    case "sash":
-      return {
-        defs:`<pattern id="${id}" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                <rect width="14" height="14" fill="${c1}"/>
-                <rect width="14" height="6" fill="${c2}"/>
-              </pattern>`,
-        fill:`url(#${id})`
-      };
-    default:
-      return { defs:"", fill:c1 };
-  }
+// fractional position of the saddle-cloth center in the rendered artwork,
+// matching CLOTH_CENTER_FRACTION in horse_render.py (fixed, single pose)
+const CLOTH_CENTER_FRACTION = [0.5226, 0.3445];
+
+function horseImageUrl(h){
+  const params = new URLSearchParams({
+    body: h.horsecolor,
+    pattern: h.pattern,
+    silk1: h.silk1,
+    silk2: h.silk2,
+  });
+  if(h.silk_filename) params.set("silk", h.silk_filename);
+  return `/render/horse.png?${params.toString()}`;
 }
 
-function horseSVG(h){
-  const pid = "pat-"+h.id;
-  const body = h.horsecolor;
-  let silkFill, capFill, defsMarkup;
-
-  if(h.silk_filename){
-    const imgId = "silkimg-"+h.id;
-    const url = `/silks/${h.silk_filename}`;
-    defsMarkup = `<pattern id="${imgId}" patternUnits="objectBoundingBox" patternContentUnits="objectBoundingBox" width="1" height="1">
-                    <image href="${url}" x="0" y="0" width="1" height="1" preserveAspectRatio="xMidYMid slice"/>
-                  </pattern>`;
-    silkFill = `url(#${imgId})`;
-    capFill = `url(#${imgId})`;
-  } else {
-    const p = patternDefs(pid, h.pattern, h.silk1, h.silk2);
-    defsMarkup = p.defs;
-    silkFill = p.fill;
-    capFill = h.cap;
-  }
-
+function horseCardMarkup(h){
+  const [leftFrac, topFrac] = CLOTH_CENTER_FRACTION;
+  const numberBadge = h.number
+    ? `<div class="cloth-number" style="left:${(leftFrac*100).toFixed(2)}%; top:${(topFrac*100).toFixed(2)}%;">${escapeHtml(String(h.number))}</div>`
+    : "";
   return `
-  <svg class="horse-svg" viewBox="0 -12 260 150" xmlns="http://www.w3.org/2000/svg">
-    <defs>${defsMarkup}</defs>
-    <path d="M62 76 C44 70, 24 62, 6 44 C18 58, 26 68, 30 78 C40 74, 50 73, 62 76 Z" fill="${body}"/>
-    <path d="M78 78 C62 90, 46 102, 32 116 C29 119, 32 123, 36 122 C50 108, 64 96, 82 84 Z" fill="${body}"/>
-    <path d="M92 80 C82 92, 74 106, 68 122 C67 126, 71 128, 74 125 C82 110, 90 96, 98 84 Z" fill="${body}"/>
-    <path d="M60 74
-             C64 58, 80 48, 98 45
-             C116 42, 132 41, 146 42
-             C155 43, 160 48, 162 56
-             C163 63, 160 70, 155 76
-             C138 88, 114 90, 94 86
-             C82 84, 72 80, 66 76
-             C64 75, 62 75, 60 74 Z" fill="${body}"/>
-    <path d="M152 70 C147 82, 143 96, 140 110 C139 114, 143 116, 146 113 C151 100, 156 87, 160 74 Z" fill="${body}"/>
-    <path d="M158 54 C175 60, 192 68, 207 79 C210 82, 208 86, 204 84 C189 75, 174 67, 156 62 Z" fill="${body}"/>
-    <path d="M148 40
-             L165 28
-             L182 18
-             L200 10
-             L216 7
-             L233 15
-             L226 21
-             L208 22
-             L192 28
-             L176 36
-             L154 46 Z" fill="${body}"/>
-    <path d="M197 10 L195 -2 L206 6 Z" fill="${body}"/>
-    <path d="M155 42 C146 37, 139 29, 134 19 C143 25, 151 31, 160 35 Z" fill="${body}"/>
-    <path d="M124 34 C118 44, 113 58, 116 72 C117 76, 122 76, 124 72 C126 61, 130 51, 136 43 Z" fill="${capFill}"/>
-    <path d="M114 18 C125 12, 138 14, 145 24 C151 33, 149 44, 139 50 C128 56, 116 52, 111 43 C107 34, 106 24, 114 18 Z" fill="${silkFill}"/>
-    <path d="M128 22 C140 17, 151 10, 159 1 C163 4, 162 9, 158 13 C150 20, 141 25, 133 28 Z" fill="${silkFill}"/>
-    <circle cx="124" cy="13" r="8" fill="${capFill}"/>
-    <path d="M118 8 L131 5 L129 12 Z" fill="${capFill}"/>
-  </svg>`;
+    <div class="horse-art">
+      <img class="horse-img" src="${horseImageUrl(h)}" alt="${escapeHtml(h.name)}">
+      ${numberBadge}
+    </div>`;
 }
 
 // -------------------------------------------------------------- board ---
@@ -158,7 +72,7 @@ function render(){
           <button class="icon-btn del-btn" title="Remove from race">✕</button>
         </div>
         <div class="horse-name" style="color:${h.namecolor}">${escapeHtml(h.name)}</div>
-        ${horseSVG(h)}
+        ${horseCardMarkup(h)}
       </div>
     `).join("");
   });
@@ -199,7 +113,6 @@ document.getElementById("f-name").addEventListener("blur", ()=>{
     document.getElementById("f-pattern").value = match.pattern;
     document.getElementById("f-silk1").value = match.silk1;
     document.getElementById("f-silk2").value = match.silk2;
-    document.getElementById("f-cap").value = match.cap;
     document.getElementById("f-namecolor").value = match.namecolor;
     pendingSilkFilename = match.silk_filename || null;
     if(pendingSilkFilename){
@@ -287,11 +200,11 @@ function startEdit(id){
   document.getElementById("formTitle").textContent = "Edit Horse";
   document.getElementById("f-name").value = h.name;
   document.getElementById("f-col").value = h.col;
+  document.getElementById("f-number").value = h.number || "";
   document.getElementById("f-horsecolor").value = h.horsecolor;
   document.getElementById("f-pattern").value = h.pattern;
   document.getElementById("f-silk1").value = h.silk1;
   document.getElementById("f-silk2").value = h.silk2;
-  document.getElementById("f-cap").value = h.cap;
   document.getElementById("f-namecolor").value = h.namecolor;
   document.getElementById("f-silkimage").value = "";
   document.getElementById("nameHint").textContent = "";
@@ -313,11 +226,11 @@ function resetForm(){
   document.getElementById("formTitle").textContent = "Add a Horse";
   document.getElementById("f-name").value = "";
   document.getElementById("f-col").value = "lead";
+  document.getElementById("f-number").value = "";
   document.getElementById("f-horsecolor").value = "#1c1b17";
   document.getElementById("f-pattern").value = "solid";
   document.getElementById("f-silk1").value = "#0b6e4f";
   document.getElementById("f-silk2").value = "#ffffff";
-  document.getElementById("f-cap").value = "#0b6e4f";
   document.getElementById("f-namecolor").value = "#1c1b17";
   document.getElementById("f-silkimage").value = "";
   document.getElementById("nameHint").textContent = "";
@@ -335,13 +248,13 @@ document.getElementById("saveBtn").onclick = async ()=>{
     return;
   }
   const col = document.getElementById("f-col").value;
+  const number = document.getElementById("f-number").value.trim() || null;
   const horseData = {
     name,
     horsecolor: document.getElementById("f-horsecolor").value,
     pattern: document.getElementById("f-pattern").value,
     silk1: document.getElementById("f-silk1").value,
     silk2: document.getElementById("f-silk2").value,
-    cap: document.getElementById("f-cap").value,
     namecolor: document.getElementById("f-namecolor").value,
     silk_filename: pendingSilkFilename
   };
@@ -361,7 +274,7 @@ document.getElementById("saveBtn").onclick = async ()=>{
     entries = entries.filter(h=>h.id!==editingHorseId);
   }
   const existingIdx = entries.findIndex(h=>h.id===horse.id);
-  const entry = {...horse, col, position: existingIdx>=0 ? entries[existingIdx].position : entries.filter(h=>h.col===col).length};
+  const entry = {...horse, col, number, position: existingIdx>=0 ? entries[existingIdx].position : entries.filter(h=>h.col===col).length};
   if(existingIdx>=0){
     entries[existingIdx] = entry;
   } else {
@@ -386,9 +299,6 @@ document.getElementById("clearAllBtn").onclick = ()=>{
   }
 };
 
-document.getElementById("raceTitle").addEventListener("input", debounce(persistRace, 500));
-document.getElementById("speedInput").addEventListener("input", debounce(persistRace, 500));
-
 let statusTimer;
 function setStatus(msg){
   const el = document.getElementById("status");
@@ -411,7 +321,7 @@ const persistRace = debounce(async ()=>{
   const payload = {
     title: document.getElementById("raceTitle").value,
     speed: document.getElementById("speedInput").value,
-    entries: entries.map(e=>({horse_id:e.id, col:e.col, position:e.position}))
+    entries: entries.map(e=>({horse_id:e.id, col:e.col, position:e.position, number:e.number||null}))
   };
   if(raceId===null){
     const res = await fetch("/api/races", {
@@ -428,6 +338,9 @@ const persistRace = debounce(async ()=>{
   }
   setSaveIndicator("saved");
 }, 300);
+
+document.getElementById("raceTitle").addEventListener("input", debounce(persistRace, 500));
+document.getElementById("speedInput").addEventListener("input", debounce(persistRace, 500));
 
 async function fetchRaces(){
   const res = await fetch("/api/races");

@@ -175,7 +175,31 @@ body{
   margin-bottom:2px;
   cursor:default;
 }
-.horse-svg{width:140px; height:82px; filter:drop-shadow(0 3px 3px rgba(0,0,0,0.15));}
+.horse-art{
+  position:relative;
+  width:190px;
+  margin:0 auto;
+  filter:drop-shadow(0 4px 4px rgba(0,0,0,0.2));
+}
+.horse-img{
+  display:block;
+  width:100%;
+  height:auto;
+}
+.cloth-number{
+  position:absolute;
+  transform:translate(-50%,-50%);
+  color:#fff;
+  font-weight:800;
+  font-size:13px;
+  line-height:1;
+  text-shadow:
+    -1.5px 0 rgba(0,0,0,0.75), 1.5px 0 rgba(0,0,0,0.75),
+    0 -1.5px rgba(0,0,0,0.75), 0 1.5px rgba(0,0,0,0.75),
+    -1.5px -1.5px rgba(0,0,0,0.75), 1.5px 1.5px rgba(0,0,0,0.75),
+    -1.5px 1.5px rgba(0,0,0,0.75), 1.5px -1.5px rgba(0,0,0,0.75);
+  pointer-events:none;
+}
 .horse-actions{
   position:absolute;
   top:2px;

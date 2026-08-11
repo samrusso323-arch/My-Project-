@@ -1,0 +1,6 @@
+speedmap.db
+silks/*
+!silks/.gitkeep
+__pycache__/
+*.pyc
+.venv/

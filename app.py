@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS horses (
     silk2 TEXT NOT NULL DEFAULT '#ffffff',
     namecolor TEXT NOT NULL DEFAULT '#1c1b17',
     silk_filename TEXT,
+    pose TEXT NOT NULL DEFAULT 'pose1',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
@@ -102,6 +103,7 @@ def row_to_horse(row):
         "silk2": row["silk2"],
         "namecolor": row["namecolor"],
         "silk_filename": row["silk_filename"],
+        "pose": row["pose"],
     }
 
 
@@ -125,16 +127,22 @@ def serve_silk(filename):
 
 @app.route("/render/horse.png")
 def render_horse_png():
+    pose = request.args.get("pose", horse_render.DEFAULT_POSE)
     body = request.args.get("body", "#8a6a3a")
     pattern = request.args.get("pattern", "solid")
     silk1 = request.args.get("silk1", "#0b6e4f")
     silk2 = request.args.get("silk2", "#ffffff")
     silk_filename = request.args.get("silk") or None
-    path = horse_render.get_or_render_path(body, pattern, silk1, silk2, silk_filename, SILKS_DIR)
+    path = horse_render.get_or_render_path(pose, body, pattern, silk1, silk2, silk_filename, SILKS_DIR)
     directory, filename = os.path.split(path)
     response = send_from_directory(directory, filename)
     response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
     return response
+
+
+@app.route("/api/poses", methods=["GET"])
+def list_poses():
+    return jsonify(horse_render.pose_list())
 
 
 # --------------------------------------------------------------- horses ---
@@ -167,6 +175,7 @@ def upsert_horse():
         "silk2": data.get("silk2", "#ffffff"),
         "namecolor": data.get("namecolor", "#1c1b17"),
         "silk_filename": data.get("silk_filename"),
+        "pose": data.get("pose") or horse_render.DEFAULT_POSE,
     }
 
     db = get_db()
@@ -175,20 +184,20 @@ def upsert_horse():
     if existing:
         db.execute(
             """UPDATE horses SET name=?, horsecolor=?, pattern=?, silk1=?, silk2=?,
-               namecolor=?, silk_filename=?, updated_at=? WHERE id=?""",
+               namecolor=?, silk_filename=?, pose=?, updated_at=? WHERE id=?""",
             (name, fields["horsecolor"], fields["pattern"], fields["silk1"],
              fields["silk2"], fields["namecolor"],
-             fields["silk_filename"], ts, existing["id"]),
+             fields["silk_filename"], fields["pose"], ts, existing["id"]),
         )
         horse_id = existing["id"]
     else:
         cur = db.execute(
             """INSERT INTO horses (name, horsecolor, pattern, silk1, silk2,
-               namecolor, silk_filename, created_at, updated_at)
-               VALUES (?,?,?,?,?,?,?,?,?)""",
+               namecolor, silk_filename, pose, created_at, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?)""",
             (name, fields["horsecolor"], fields["pattern"], fields["silk1"],
              fields["silk2"], fields["namecolor"],
-             fields["silk_filename"], ts, ts),
+             fields["silk_filename"], fields["pose"], ts, ts),
         )
         horse_id = cur.lastrowid
     db.commit()

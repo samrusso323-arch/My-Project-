@@ -28,12 +28,20 @@ function debounce(fn, wait){
 
 // -------------------------------------------------------------- image ---
 
-// fractional position of the saddle-cloth center in the rendered artwork,
-// matching CLOTH_CENTER_FRACTION in horse_render.py (fixed, single pose)
-const CLOTH_CENTER_FRACTION = [0.5226, 0.3445];
+// pose id -> [leftFrac, topFrac] for the number-badge anchor, fetched from /api/poses
+let poseMeta = {};
+const DEFAULT_POSE = "pose1";
+
+async function fetchPoses(){
+  const res = await fetch("/api/poses");
+  const poses = await res.json();
+  poseMeta = {};
+  poses.forEach(p=>{ poseMeta[p.id] = p.cloth_center_fraction; });
+}
 
 function horseImageUrl(h){
   const params = new URLSearchParams({
+    pose: h.pose || DEFAULT_POSE,
     body: h.horsecolor,
     pattern: h.pattern,
     silk1: h.silk1,
@@ -44,7 +52,7 @@ function horseImageUrl(h){
 }
 
 function horseCardMarkup(h){
-  const [leftFrac, topFrac] = CLOTH_CENTER_FRACTION;
+  const [leftFrac, topFrac] = poseMeta[h.pose || DEFAULT_POSE] || [0.4, 0.35];
   const numberBadge = h.number
     ? `<div class="cloth-number" style="left:${(leftFrac*100).toFixed(2)}%; top:${(topFrac*100).toFixed(2)}%;">${escapeHtml(String(h.number))}</div>`
     : "";
@@ -110,6 +118,7 @@ document.getElementById("f-name").addEventListener("blur", ()=>{
   const match = horsesCache.find(h=>normalizeName(h.name)===normalizeName(name));
   if(match){
     document.getElementById("f-horsecolor").value = match.horsecolor;
+    document.getElementById("f-pose").value = match.pose || DEFAULT_POSE;
     document.getElementById("f-pattern").value = match.pattern;
     document.getElementById("f-silk1").value = match.silk1;
     document.getElementById("f-silk2").value = match.silk2;
@@ -202,6 +211,7 @@ function startEdit(id){
   document.getElementById("f-col").value = h.col;
   document.getElementById("f-number").value = h.number || "";
   document.getElementById("f-horsecolor").value = h.horsecolor;
+  document.getElementById("f-pose").value = h.pose || DEFAULT_POSE;
   document.getElementById("f-pattern").value = h.pattern;
   document.getElementById("f-silk1").value = h.silk1;
   document.getElementById("f-silk2").value = h.silk2;
@@ -228,6 +238,7 @@ function resetForm(){
   document.getElementById("f-col").value = "lead";
   document.getElementById("f-number").value = "";
   document.getElementById("f-horsecolor").value = "#1c1b17";
+  document.getElementById("f-pose").value = DEFAULT_POSE;
   document.getElementById("f-pattern").value = "solid";
   document.getElementById("f-silk1").value = "#0b6e4f";
   document.getElementById("f-silk2").value = "#ffffff";
@@ -252,6 +263,7 @@ document.getElementById("saveBtn").onclick = async ()=>{
   const horseData = {
     name,
     horsecolor: document.getElementById("f-horsecolor").value,
+    pose: document.getElementById("f-pose").value,
     pattern: document.getElementById("f-pattern").value,
     silk1: document.getElementById("f-silk1").value,
     silk2: document.getElementById("f-silk2").value,
@@ -453,6 +465,7 @@ document.getElementById("bulkConfirmBtn").onclick = async ()=>{
 // ------------------------------------------------------------- boot ---
 
 async function boot(){
+  await fetchPoses();
   await fetchHorses();
   await fetchSilks("");
   await fetchRaces();

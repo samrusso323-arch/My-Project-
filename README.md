@@ -12,6 +12,18 @@ need to be entered once and are reused automatically in future races.
 
 ## Run it
 
+**Easiest way:** download this repo to your computer, then double-click:
+- **`start.command`** on Mac
+- **`start.bat`** on Windows
+
+(Requires [Python 3](https://www.python.org/downloads/) — on Windows, make
+sure to check "Add python.exe to PATH" during install.) That's it — it
+installs what it needs and opens the app in your browser automatically at
+http://localhost:5000. Leave that window open while you use the app; close
+it to stop.
+
+**Manual way**, if you'd rather use a terminal:
+
 ```bash
 pip install -r requirements.txt
 python app.py
@@ -21,6 +33,7 @@ Then open **http://localhost:5000** in a browser.
 
 ## What's in here
 
+- `start.command` / `start.bat` — double-click launchers (Mac / Windows).
 - `app.py` — Flask server: REST API + serves the static UI.
 - `horse_render.py` — generates each horse's artwork on request (see below).
 - `static/index.html`, `static/app.js`, `static/styles.css` — the board UI.

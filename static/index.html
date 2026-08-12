@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Speed Map Builder</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<div class="header">
+  <div class="race-title-wrap">
+    <span class="eyebrow">Predicted Speed Map</span>
+    <input class="race-title" id="raceTitle" value="Predicted Speed Map – Race 1">
+  </div>
+  <div class="speed-wrap">
+    <span class="speed-label">Expected Speed</span>
+    <input class="speed-input" id="speedInput" value="Good">
+  </div>
+</div>
+
+<div class="toolbar">
+  <select id="raceSelect">
+    <option value="">— New Race —</option>
+  </select>
+  <button class="secondary" id="newRaceBtn" style="padding:7px 14px; font-size:12px;">New Race</button>
+  <span class="save-indicator" id="saveIndicator"></span>
+</div>
+
+<div class="board">
+  <div class="columns">
+    <div>
+      <div class="col-title">Backmarkers</div>
+      <div class="col-body" id="col-back"></div>
+    </div>
+    <div>
+      <div class="col-title">Midfield</div>
+      <div class="col-body" id="col-mid"></div>
+    </div>
+    <div>
+      <div class="col-title">Leaders / On Pace</div>
+      <div class="col-body" id="col-lead"></div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="slip">
+    <h2 id="formTitle">Add a Horse</h2>
+    <div class="form-grid">
+      <div class="field">
+        <label>Horse Name</label>
+        <input type="text" id="f-name" placeholder="e.g. Whiskey Neat" list="horseNames">
+        <datalist id="horseNames"></datalist>
+        <div class="field-hint" id="nameHint"></div>
+      </div>
+      <div class="field">
+        <label>Position</label>
+        <select id="f-col">
+          <option value="back">Backmarkers</option>
+          <option value="mid">Midfield</option>
+          <option value="lead" selected>Leaders / On Pace</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Saddle Cloth # <span style="font-weight:400; text-transform:none;">(optional)</span></label>
+        <input type="text" id="f-number" placeholder="e.g. 6" maxlength="3">
+      </div>
+      <div class="field">
+        <label>Horse Colour</label>
+        <input type="color" id="f-horsecolor" value="#1c1b17">
+      </div>
+      <div class="field">
+        <label>Horse Pose</label>
+        <select id="f-pose">
+          <option value="pose1">Gallop 1</option>
+          <option value="pose2">Gallop 2</option>
+          <option value="pose3">Gallop 3</option>
+        </select>
+      </div>
+      <div class="field" style="grid-column: 1 / -1;">
+        <label>Silk Image (upload a photo of the actual silks)</label>
+        <input type="file" id="f-silkimage" accept="image/*">
+        <div id="silkPreviewWrap" style="margin-top:8px; align-items:center; gap:10px;">
+          <img id="silkPreview" style="width:44px;height:52px;object-fit:cover;border:1px solid var(--line);border-radius:4px;">
+          <button type="button" class="icon-btn" id="removeSilkImg" title="Remove image" style="width:auto;height:auto;border-radius:5px;padding:5px 8px;">Remove image</button>
+        </div>
+        <div class="silk-library">
+          <div class="lib-label">
+            <span>Silk Library — click to reuse a saved silk</span>
+            <input type="text" id="silkSearch" placeholder="Search silks or horse name…">
+          </div>
+          <div class="silk-grid" id="silkGrid"></div>
+          <div class="btnrow" style="margin-top:10px;">
+            <button type="button" class="secondary" id="bulkImportBtn" style="padding:8px 14px; font-size:12px;">Bulk Import Silks…</button>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Silk Pattern <span style="font-weight:400; text-transform:none;">(used if no image)</span></label>
+        <select id="f-pattern">
+          <option value="solid">Solid</option>
+          <option value="hoops">Hoops</option>
+          <option value="stripes">Stripes</option>
+          <option value="stars">Stars</option>
+          <option value="spots">Spots</option>
+          <option value="quarters">Quarters</option>
+          <option value="sash">Sash</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Silk Colour 1</label>
+        <input type="color" id="f-silk1" value="#0b6e4f">
+      </div>
+      <div class="field">
+        <label>Silk Colour 2</label>
+        <input type="color" id="f-silk2" value="#ffffff">
+      </div>
+      <div class="field">
+        <label>Name Colour</label>
+        <input type="color" id="f-namecolor" value="#1c1b17">
+      </div>
+    </div>
+    <div class="btnrow">
+      <button class="primary" id="saveBtn">Add Horse</button>
+      <button class="secondary" id="cancelEditBtn" style="display:none;">Cancel Edit</button>
+      <button class="secondary" id="clearAllBtn">Clear Board</button>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="bulkModal">
+  <div class="modal">
+    <h3>Bulk Import Silks</h3>
+    <p class="sub">Drop in a folder of silk photos. We'll guess the horse name from each filename — confirm or edit before importing.</p>
+    <input type="file" id="bulkFileInput" accept="image/*" multiple>
+    <div id="bulkAssignRows" style="margin-top:14px; max-height:340px; overflow-y:auto;"></div>
+    <div class="btnrow">
+      <button class="primary" id="bulkConfirmBtn" style="display:none;">Import & Assign</button>
+      <button class="secondary" id="bulkCancelBtn">Close</button>
+    </div>
+    <div class="status" id="bulkStatus"></div>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
